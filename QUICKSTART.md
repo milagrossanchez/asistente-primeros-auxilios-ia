@@ -58,17 +58,31 @@ Abre **http://localhost:8766**
 
 La barra de estado en la web te confirma si está usando el modelo ya entrenado o todavía el modelo base.
 
-## Opción C — Entrenar también el modelo de imagen (opcional, lento)
+### Generar una imagen nueva con el LoRA de imagen (ya entrenado, opcional)
 
-**Aviso:** con solo 10 imágenes de entrenamiento, este LoRA aprende principalmente el estilo visual, no maniobras nuevas. El chat ya funciona con las 10 ilustraciones existentes sin necesidad de este paso — es un ejercicio académico adicional, no una mejora garantizada. Puede tomar 1-3+ horas en un Mac de 16 GB.
+El repositorio ya incluye el adaptador `entrenamiento/adaptador_lora_imagenes/` (SDXL-Turbo + LoRA, entrenado sobre las 10 ilustraciones). El chat **no genera esta imagen automáticamente** junto con la respuesta de texto, porque toma varios minutos:
+
+> Debajo de cada ilustración fija, aparece un botón **"🎨 Generar con IA (LoRA)"**. Hay que hacer click ahí explícitamente para que el servidor cargue SDXL-Turbo (la primera vez tarda más) y genere una imagen nueva desde cero con ese tema — puede tomar 3-5 minutos por imagen en un Mac Mini M4.
+
+Si prefieres probarlo por consola en vez de la web:
+
+```bash
+cd entrenamiento
+source venv/bin/activate
+python3 generar_imagen.py "PAUX_STYLE educational first-aid illustration of an adult responder kneeling beside an adult training mannequin and performing chest compressions" salida.png
+```
+
+### Volver a entrenar el modelo de imagen desde cero (opcional)
+
+No es necesario para usar el chat — el adaptador ya está entrenado y en el repo. Solo hace falta si quieres reentrenarlo con otros parámetros.
+
+**Aviso:** con solo 10 imágenes de entrenamiento, este LoRA aprende principalmente el estilo visual, no maniobras nuevas — el resultado tiene ruido y artefactos visibles. Tomó **~9.5 horas** en un Mac Mini M4 de 16 GB (mucho más lento de lo esperado, ya que MPS no está tan optimizado como CUDA para este tipo de entrenamiento).
 
 ```bash
 cd entrenamiento
 ./setup_entorno_imagenes.sh   # instala PyTorch + diffusers (una sola vez)
 ./entrenar_imagenes.sh        # entrena el LoRA de SDXL-Turbo
 ```
-
-El adaptador queda en `entrenamiento/adaptador_lora_imagenes/`.
 
 ## Ambos chats a la vez
 

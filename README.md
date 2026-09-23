@@ -13,38 +13,45 @@ El contenido se basa en la Cartilla Educativa de Atención de Primeros Auxilios 
 | **Chat RAG** | `archivos_generales/` | `8765` | Busca la respuesta más parecida en el dataset del MINSA y se la pasa como contexto a `qwen3.5:9b` vía **Ollama**. No requiere entrenamiento, funciona de inmediato. |
 | **Chat con modelo entrenado** | `web_modelo_entrenado/` | `8766` | Usa `Qwen2.5-7B-Instruct` con un **adaptador LoRA entrenado localmente** (fine-tuning real sobre el dataset), cargado directamente con **MLX** (framework de Apple para Apple Silicon), sin pasar por Ollama. |
 
-Ambas webs muestran la ilustración correspondiente (de las 10 disponibles en `../imagenes/`) cuando la pregunta coincide con uno de los temas cubiertos.
+Ambas webs muestran automáticamente la ilustración fija correspondiente (de las 10 disponibles en `imagenes/`) cuando la pregunta coincide con uno de los temas cubiertos — esto ocurre sin ningún paso adicional, apenas responde el chat.
+
+### Generar una imagen nueva con IA (opcional, solo en el chat LoRA)
+
+Además de la ilustración fija, el chat en `web_modelo_entrenado/` (puerto 8766) tiene un **LoRA de imagen entrenado localmente** (SDXL-Turbo + fine-tuning sobre las 10 ilustraciones). Esta generación **no ocurre automáticamente** porque es lenta (varios minutos por imagen en Apple Silicon sin CUDA):
+
+> Debajo de cada ilustración fija aparece un botón **"🎨 Generar con IA (LoRA)"**. Hay que darle click explícitamente para que el modelo genere una imagen nueva desde cero con ese adaptador — no se genera sola ni junto con la respuesta de texto.
 
 ## Estructura
 
 ```text
-ialocal/
-├── imagenes/                              10 ilustraciones (RCP, atragantamiento, etc.)
-└── ProyectoIA_Generativa_PrimerosAuxilios/
-    ├── README.md
-    ├── QUICKSTART.md
-    ├── requirements.txt
-    ├── dataset/
-    │   └── dataset_primeros_auxilios.csv  126 pares pregunta-respuesta (MINSA)
-    ├── pdfs/
-    │   └── Cartilla_educativa_de_primeros_auxilio.pdf
-    ├── archivos_generales/                Chat RAG (puerto 8765)
-    │   ├── server.py
-    │   ├── index.html
-    │   └── dataset_primeros_auxilios.csv
-    ├── web_modelo_entrenado/              Chat con modelo LoRA entrenado (puerto 8766)
-    │   ├── server.py
-    │   └── index.html
-    └── entrenamiento/                     Scripts y configuración del fine-tuning
-        ├── setup_entorno.sh               Instala Python 3.12 + mlx-lm
-        ├── preparar_dataset_mlx.py        Convierte el CSV a formato de chat JSONL
-        ├── entrenar_texto.sh              Fine-tuning LoRA de Qwen2.5-7B-Instruct
-        ├── probar_modelo_texto.py         Prueba rápida por consola del modelo entrenado
-        ├── setup_entorno_imagenes.sh      Instala PyTorch + diffusers (backend MPS)
-        ├── preparar_dataset_imagenes.py   Prepara las 10 imágenes + captions
-        ├── entrenar_imagenes.sh           Fine-tuning LoRA de SDXL-Turbo
-        ├── adaptador_lora_texto/          Adaptador LoRA de texto ya entrenado
-        └── venv/                          Entorno virtual (Python 3.12)
+ProyectoIA_Generativa_PrimerosAuxilios/
+├── README.md
+├── QUICKSTART.md
+├── requirements.txt
+├── imagenes/                           10 ilustraciones fijas (RCP, atragantamiento, etc.)
+├── dataset/
+│   └── dataset_primeros_auxilios.csv   126 pares pregunta-respuesta (MINSA)
+├── pdfs/
+│   └── Cartilla_educativa_de_primeros_auxilio.pdf
+├── archivos_generales/                 Chat RAG (puerto 8765)
+│   ├── server.py
+│   ├── index.html
+│   └── dataset_primeros_auxilios.csv
+├── web_modelo_entrenado/               Chat con modelo LoRA entrenado (puerto 8766)
+│   ├── server.py
+│   ├── index.html
+│   └── imagenes_generadas/             Imágenes creadas al presionar "Generar con IA"
+└── entrenamiento/                      Scripts, configuración y adaptadores del fine-tuning
+    ├── setup_entorno.sh                Instala Python 3.12 + mlx-lm
+    ├── preparar_dataset_mlx.py         Convierte el CSV a formato de chat JSONL
+    ├── entrenar_texto.sh               Fine-tuning LoRA de Qwen2.5-7B-Instruct
+    ├── probar_modelo_texto.py          Prueba rápida por consola del modelo entrenado
+    ├── setup_entorno_imagenes.sh       Instala PyTorch + diffusers (backend MPS)
+    ├── preparar_dataset_imagenes.py    Prepara las 10 imágenes + captions
+    ├── entrenar_imagenes.sh            Fine-tuning LoRA de SDXL-Turbo
+    ├── generar_imagen.py               Prueba de generación por consola, sin la web
+    ├── adaptador_lora_texto/           Adaptador LoRA de texto ya entrenado
+    └── adaptador_lora_imagenes/        Adaptador LoRA de imagen ya entrenado
 ```
 
 ## Arquitectura técnica
@@ -72,10 +79,13 @@ ialocal/
 - Resolución: 384 × 384
 - Rango LoRA: 4
 - Batch: 1, acumulación de gradiente: 2
-- Pasos: 100
+- Pasos: 100 (20 épocas sobre las 10 imágenes)
 - Backend: PyTorch + MPS (Metal), sin CUDA
+- Tiempo real de entrenamiento: ~9.5 horas en un Mac Mini M4 (más lento de lo esperado; MPS no está tan optimizado como CUDA para este tipo de carga)
+- Loss final: 0.0546 (bajó desde 0.343 al inicio)
+- Generación de una imagen nueva con el adaptador entrenado: ~5 minutos por imagen (el decode del VAE se ejecuta en CPU como workaround a un cuelgue conocido de PyTorch+MPS con SDXL)
 
-**Aviso importante:** con solo 10 imágenes de entrenamiento, el LoRA visual aprende principalmente el estilo, no maniobras nuevas. Es un ejercicio académico — las 10 ilustraciones ya generadas y usadas en el chat no dependen de que este entrenamiento termine ni mejore el resultado.
+**Aviso importante:** con solo 10 imágenes de entrenamiento, el LoRA visual aprende principalmente el estilo y la composición general, no maniobras médicamente precisas. Las imágenes generadas con el botón "Generar con IA" tienen ruido y artefactos visibles — es un ejercicio académico de demostración del pipeline completo, no una fuente confiable de material educativo. Las 10 ilustraciones fijas que usa el chat por defecto no dependen de este LoRA.
 
 ## Dataset visual
 
