@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Primeros Auxilios · Modelo Entrenado</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --panel: #ffffff;
+    --accent: #1e4fd9;
+    --accent-dark: #163aa8;
+    --text: #1c1c1c;
+    --muted: #6b7280;
+    --bubble-user: #1e4fd9;
+    --bubble-bot: #eef1f8;
+    --border: #e0e4ee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    background: var(--accent);
+    color: white;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    flex-shrink: 0;
+  }
+  header .badge {
+    width: 28px; height: 28px;
+    background: white;
+    border-radius: 6px;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header p { font-size: 11.5px; margin: 0; opacity: .9; }
+
+  #status-bar {
+    padding: 6px 16px;
+    font-size: 11.5px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  #status-bar.entrenado { background: #e5f6ea; color: #1c6b34; }
+  #status-bar.base { background: #fff4e0; color: #8a5a00; }
+  #status-bar.error { background: #fde8e8; color: #a81f1f; }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg { max-width: 78%; display: flex; flex-direction: column; gap: 6px; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.bot { align-self: flex-start; align-items: flex-start; }
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.45;
+    font-size: 14.5px;
+  }
+  .msg.user .bubble { background: var(--bubble-user); color: white; border-bottom-right-radius: 4px; }
+  .msg.bot .bubble { background: var(--bubble-bot); color: var(--text); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+  .bubble p { margin: 0 0 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .bubble ul { margin: 4px 0 8px; padding-left: 20px; }
+  .bubble li { margin-bottom: 4px; }
+  .bubble strong { font-weight: 700; }
+  .infografia {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .paso-img {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .paso-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .paso-img img {
+    max-width: 200px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .paso-img img.imagen-generada {
+    border: 2px solid var(--accent);
+  }
+  .gen-ia-btn {
+    font-size: 10.5px;
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 12px;
+    padding: 3px 10px;
+    cursor: pointer;
+    margin-top: 2px;
+  }
+  .gen-ia-btn:hover { background: var(--bg); }
+  .gen-ia-btn:disabled { opacity: .6; cursor: default; }
+  .typing { font-size: 13px; color: var(--muted); font-style: italic; }
+  .metrics {
+    align-self: flex-start;
+    font-size: 10.5px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    padding-left: 2px;
+  }
+  .disclaimer {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 16px 0;
+  }
+
+  footer {
+    padding: 12px 16px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  #input {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 22px;
+    border: 1px solid var(--border);
+    font-size: 14.5px;
+    outline: none;
+    background: var(--bg);
+  }
+  #input:focus { border-color: var(--accent); }
+  #send {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 22px;
+    padding: 0 20px;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #send:hover { background: var(--accent-dark); }
+  #send:disabled { opacity: .5; cursor: default; }
+
+  @media (max-width: 480px) {
+    .msg { max-width: 92%; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="badge">🧠</div>
+    <div>
+      <h1>Primeros Auxilios · Modelo Entrenado (LoRA)</h1>
+      <p>Qwen2.5-7B-Instruct + fine-tuning local (MLX) · Emergencias: 106 / 116</p>
+    </div>
+  </header>
+  <div id="status-bar">Comprobando estado del modelo...</div>
+
+  <div id="chat"></div>
+  <p class="disclaimer">Herramienta educativa. No sustituye la atención médica profesional. Ante una emergencia real llama al 106 (SAMU) o 116 (bomberos).</p>
+
+  <footer>
+    <input id="input" type="text" placeholder="Escribe tu consulta de primeros auxilios..." autofocus>
+    <button id="send">Enviar</button>
+  </footer>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const statusBar = document.getElementById('status-bar');
+
+function addMessage(role, html) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  wrap.innerHTML = html;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderMarkdown(raw) {
+  const escaped = escapeHtml(raw);
+  const lines = escaped.split('\n');
+  let html = '';
+  let inList = false;
+
+  for (let line of lines) {
+    const bulletMatch = line.match(/^\s*[-*]\s+(.*)$/);
+    const numberMatch = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    const item = bulletMatch ? bulletMatch[1] : (numberMatch ? numberMatch[1] : null);
+
+    if (item !== null) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += '<li>' + inlineMarkdown(item) + '</li>';
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (line.trim() === '') {
+        html += '<br>';
+      } else {
+        html += '<p>' + inlineMarkdown(line) + '</p>';
+      }
+    }
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function inlineMarkdown(s) {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<!\*)\*(?!\*)(.+?)\*(?!\*)/g, '<em>$1</em>');
+}
+
+async function checkStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    if (data.modelo_entrenado) {
+      statusBar.className = 'entrenado';
+      statusBar.textContent = '✅ Usando el modelo con fine-tuning LoRA (entrenado con el dataset del MINSA)';
+    } else {
+      statusBar.className = 'base';
+      statusBar.textContent = '⚠️ Adaptador LoRA no encontrado todavía — usando el modelo base SIN entrenar';
+    }
+  } catch (err) {
+    statusBar.className = 'error';
+    statusBar.textContent = '⚠️ No se pudo conectar con el servidor. ¿Está corriendo server.py?';
+  }
+}
+checkStatus();
+
+addMessage('bot', '<div class="bubble">Hola, soy el asistente de primeros auxilios usando el modelo entrenado localmente. Pregúntame lo que necesites.</div>');
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendBtn.disabled = true;
+
+  addMessage('user', '<div class="bubble">' + escapeHtml(text) + '</div>');
+  const typingEl = addMessage('bot', '<div class="bubble typing">Generando respuesta (modelo local)...</div>');
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    typingEl.remove();
+
+    if (data.error) {
+      addMessage('bot', '<div class="bubble">⚠️ ' + escapeHtml(data.error) + '</div>');
+      return;
+    }
+
+    let html = '<div class="bubble">' + renderMarkdown(data.answer) + '</div>';
+    if (data.images && data.images.length) {
+      html += '<div class="infografia">';
+      data.images.forEach((src, i) => {
+        const tema = (data.temas && data.temas[i]) ? data.temas[i] : '';
+        html += '<div class="paso-img">' +
+          '<span class="paso-num">Paso ' + (i + 1) + '</span>' +
+          '<img src="' + src + '" alt="Ilustración paso ' + (i + 1) + '">' +
+          '<button class="gen-ia-btn" data-tema="' + escapeHtml(tema) + '">🎨 Generar con IA (LoRA)</button>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+    const msgEl = addMessage('bot', html);
+    msgEl.querySelectorAll('.gen-ia-btn').forEach(btn => {
+      btn.addEventListener('click', () => generarConIA(btn));
+    });
+
+    if (data.metrics) {
+      const m = data.metrics;
+      const metricsEl = document.createElement('div');
+      metricsEl.className = 'metrics';
+      metricsEl.textContent = `⏱ ${m.tiempo_segundos}s · ${m.tokens_generados} tokens · ${m.tokens_por_segundo} tok/s`;
+      chat.appendChild(metricsEl);
+    }
+
+    chat.scrollTop = chat.scrollHeight;
+  } catch (err) {
+    typingEl.remove();
+    addMessage('bot', '<div class="bubble">⚠️ No se pudo conectar con el servidor local. ¿Está corriendo server.py?</div>');
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+async function generarConIA(btn) {
+  const tema = btn.dataset.tema;
+  if (!tema) return;
+  const original = btn.textContent;
+  btn.textContent = '⏳ Generando... (puede tardar varios minutos)';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/generar-imagen', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tema })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      btn.textContent = '⚠️ ' + data.error;
+      return;
+    }
+
+    const wrap = btn.closest('.paso-img');
+    const genImg = document.createElement('img');
+    genImg.src = data.imagen_generada;
+    genImg.alt = 'Imagen generada con el LoRA entrenado';
+    genImg.className = 'imagen-generada';
+    const label = document.createElement('span');
+    label.className = 'paso-num';
+    label.textContent = 'Generada con IA (' + data.segundos + 's)';
+    wrap.appendChild(label);
+    wrap.appendChild(genImg);
+    btn.remove();
+  } catch (err) {
+    btn.textContent = '⚠️ No se pudo generar (revisa la consola del servidor)';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
+</script>
+</body>
+</html>

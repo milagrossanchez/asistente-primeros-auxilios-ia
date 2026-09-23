@@ -1,0 +1,17 @@
+# Entorno virtual de Python (se recrea con setup_entorno.sh / setup_entorno_imagenes.sh)
+entrenamiento/venv/
+
+# Presentaciones (no se versionan)
+*.pptx
+*.ppt
+~$*
+
+# Archivos de sistema
+.DS_Store
+
+# Imagenes generadas en tiempo real por el chat (contenido dinamico, no fuente)
+web_modelo_entrenado/imagenes_generadas/*.png
+!web_modelo_entrenado/imagenes_generadas/.gitkeep
+
+# Logs locales
+*.log

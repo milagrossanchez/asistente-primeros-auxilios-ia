@@ -1,0 +1,23 @@
+# Dependencias del proyecto - Asistente Generativo de Primeros Auxilios (Perú)
+# Proyecto 100% local en Mac Apple Silicon. No requiere CUDA ni Colab.
+
+# --- Chat RAG (archivos_generales/) ---
+# Sin dependencias de Python: usa solo la librería estándar + Ollama corriendo
+# de forma externa (https://ollama.com) con el modelo qwen3.5:9b descargado.
+
+# --- Entrenamiento y chat con modelo LoRA de texto (entrenamiento/, web_modelo_entrenado/) ---
+# Instalado automáticamente por entrenamiento/setup_entorno.sh dentro de un venv (Python 3.12)
+mlx
+mlx-lm
+huggingface_hub
+
+# --- Entrenamiento LoRA de imagen, opcional (entrenamiento/entrenar_imagenes.sh) ---
+# Instalado automáticamente por entrenamiento/setup_entorno_imagenes.sh
+torch
+torchvision
+diffusers
+transformers
+accelerate
+peft
+datasets
+pillow
