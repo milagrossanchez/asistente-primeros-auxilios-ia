@@ -21,6 +21,15 @@ Además de la ilustración fija, el chat en `web_modelo_entrenado/` (puerto 8766
 
 > Debajo de cada ilustración fija aparece un botón **"🎨 Generar con IA (LoRA)"**. Hay que darle click explícitamente para que el modelo genere una imagen nueva desde cero con ese adaptador — no se genera sola ni junto con la respuesta de texto.
 
+### Cómo se vincula el texto con la imagen (importante: no es IA en este paso)
+
+La elección de qué imagen mostrar —tanto la fija como la que se genera al hacer click— **no la decide ningún modelo de lenguaje ni de visión**. Es un mecanismo de dos pasos, ambos por coincidencia de texto plano:
+
+1. **Detección del tema** (`find_images()` en `server.py`): compara la pregunta y la respuesta generada contra una tabla fija de 10 reglas (`IMAGE_RULES`), cada una con una lista de palabras clave (ej. `"quemadura"`, `"quemad"` → `04_enfriar_quemadura.png`). Es un `if palabra_clave in texto`, no una red neuronal.
+2. **Elección del prompt de generación** (solo al presionar "Generar con IA"): el nombre de archivo detectado en el paso 1 se usa como clave de un segundo diccionario fijo, `IMAGE_PROMPTS` (también en `server.py`), que devuelve el mismo texto en inglés con el que esa imagen fue entrenada (ej. `"PAUX_STYLE educational first-aid illustration of a responder cooling a burn..."`). Ese prompt es siempre idéntico para el mismo tema — no se redacta a partir de los detalles específicos de tu pregunta.
+
+En resumen: el LoRA de texto nunca "le dice" al LoRA de imagen qué generar. Ambos están conectados por un diccionario de correspondencia escrito a mano con 10 entradas, no por aprendizaje conjunto.
+
 ## Estructura
 
 ```text
